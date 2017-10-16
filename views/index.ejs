@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+
+<title><%= title %></title>
+<link rel='stylesheet' href='/stylesheets/style.css'/>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="/scripts/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://fastcdn.org/FileSaver.js/1.1.20151003/FileSaver.min.js"></script>
+</head>
+<body>
+<input id="readfile" type="file" onchange="handleFile(event)"/>
+<h1><%= title %></h1>
+<p>Welcome to <%= title %></p>
+<script>
+
+        var rABS = true; // true: readAsBinaryString ; false: readAsArrayBuffer
+        function handleFile(e) {
+            let files = e.target.files, f = files[0];
+            let reader = new FileReader();
+            reader.onload = function (e) {
+                let data = e.target.result;
+                if (!rABS) data = new Uint8Array(data);
+                let workbook = XLSX.read(data, {type: rABS ? 'binary' : 'array'});
+                let sheet_name_list = workbook.SheetNames;
+                let json = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]])
+                let formData = {
+                    "datapoints":json
+                }
+                $.ajax({
+                    url     : 'users/post',
+                    type: "POST",
+                    contentType: "application/json; charset=utf-8", // this
+                    dataType: "json", // and this
+                    data    : JSON.stringify(formData),
+                    success : function( response ) {
+                        console.log( response );
+                        let test = XLSX.utils.json_to_sheet(response.results)
+                        var wb = { SheetNames:["test"], Sheets:{test} };
+                        var wopts = { bookType:'xlsx', bookSST:false, type:'binary' };
+
+                        var wbout = XLSX.write(wb,wopts);
+
+                        function s2ab(s) {
+                            var buf = new ArrayBuffer(s.length);
+                            var view = new Uint8Array(buf);
+                            for (var i=0; i!=s.length; ++i) view[i] = s.charCodeAt(i) & 0xFF;
+                            return buf;
+                        }
+                        /* the saveAs call downloads a file on the local machine */
+                        saveAs(new Blob([s2ab(wbout)],{type:"application/octet-stream"}), "test.xlsx");
+                    }
+                });
+                console.log(workbook)
+                return false;
+                /* DO SOMETHING WITH workbook HERE */
+            };
+            if (rABS) reader.readAsBinaryString(f); else reader.readAsArrayBuffer(f);
+        }
+
+</script>
+</body>
+
+</html>
