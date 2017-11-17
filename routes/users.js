@@ -1,8 +1,9 @@
 var express = require('express');
 var router = express.Router();
-var httpUtil = require('../util/httpUtils');
-const onemapGeocodeEP = "http://developers.onemap.sg/commonapi/convert/3414to4326?";
-/* GET users listing. */
+var httpUtil = require('../util/httpUtils');248369
+// const onemapGeocodeEP = "http://developers.onemap.sg/commonapi/convert/3414to4326?";
+const onemapGeocodeEP =  "http://developers.onemap.sg/commonapi/search?searchVal="
+const epParams = "&returnGeom=Y&getAddrDetails=Y&pageNum=1";
 router.get('/', function (req, res, next) {
 
     console.log(req.body)
@@ -11,8 +12,9 @@ router.get('/', function (req, res, next) {
 router.post('/post', function (req, res, next) {
     function callback(dataPoints) {
         console.log("response")
-        res.send({"results" : dataPoints});
+        res.send({"results": dataPoints});
     }
+
     let dataPoints = req.body.datapoints;
     sendRequests(dataPoints, 0, 0, [], callback)
 
@@ -21,14 +23,22 @@ function sendRequests(data, responseCount, index, datapointArray, callback) {
     if (responseCount >= data.length) {
         callback(datapointArray);
     }
-
-    httpUtil.postRequest(onemapGeocodeEP + "X=" + data[index].X + "&Y=" + data[index].Y)
+    var testpcost =  data[index].postal;
+    var test = onemapGeocodeEP + data[index].postal+epParams;
+    httpUtil.postRequest(test)
         .then(function (success) {
+            let results = success.results[0]
+            let address = results.ADDRESS;
+            let postal = results.POSTAL;
+            let lat = results.LATITUDE;
+            let long = results.LONGITUDE;
+            console.log(success);
+            datapointArray.push({
+                "postal": postal,
+                "lat": lat,
+                "long": long,
+                "addr" : address,
 
-           datapointArray.push({
-                "postal": data[index].PostalCode,
-                "lat": success.latitude,
-                "long": success.longitude
             })
             responseCount++;
             index++
@@ -39,13 +49,14 @@ function sendRequests(data, responseCount, index, datapointArray, callback) {
 
             datapointArray.push({
                 "postal": data[index].postal,
-                "msg" : "failed to geocode"
+                "msg": "failed to geocode"
             })
             responseCount++;
             index++
             sendRequests(data, responseCount, index, datapointArray, callback)
 
         })
+
 
 }
 
