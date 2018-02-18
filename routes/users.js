@@ -28,18 +28,23 @@ function sendRequests(data, responseCount, index, datapointArray, callback) {
     httpUtil.postRequest(test)
         .then(function (success) {
             let results = success.results[0]
-            let address = results.ADDRESS;
-            let postal = results.POSTAL;
-            let lat = results.LATITUDE;
-            let long = results.LONGITUDE;
-            console.log(success);
-            datapointArray.push({
-                "postal": postal,
-                "lat": lat,
-                "long": long,
-                "addr" : address,
+            if(results!==undefined)
+            {
+                let address = results.ADDRESS;
+                let postal = results.POSTAL;
+                let lat = results.LATITUDE;
+                let long = results.LONGITUDE;
+                console.log(success);
+                datapointArray.push({
+                    "postal": postal,
+                    "lat": lat,
+                    "long": long,
+                    "addr" : address,
 
-            })
+                })
+            }
+
+
             responseCount++;
             index++
             sendRequests(data, responseCount, index, datapointArray, callback)
